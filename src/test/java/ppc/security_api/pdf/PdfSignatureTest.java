@@ -11,7 +11,6 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 class PdfSignatureTest {
 
