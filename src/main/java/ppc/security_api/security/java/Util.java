@@ -430,7 +430,6 @@ public class Util  {
     /**
      * ASCII码字符串转数字字符串
      * 
-     * @param String
      *            ASCII字符串
      * @return 字符串
      */
@@ -633,9 +632,43 @@ public class Util  {
 		}
 		return bt;
     }
+    public static String fillData(String data,int length){
+        if(length != 16 && length != 32){
+            return "length error:" + length +"length just 16、32";
+        }
+        String hexData = byteToHex(data.getBytes());
+        String fill = "80000000000000000000000000000000000000";
+        int fillLen = length - (hexData.length() % length);
+        hexData = hexData + fill.substring(0,fillLen);
 
+
+        return hexData;
+    }
+
+
+    public static String resolveFillData(String hexData ,int length){
+        if(length != 16 && length != 32){
+            return "length error:" + length +"length just 16、32";
+        }
+
+        int index = hexData.lastIndexOf("80");
+        String end = hexData.substring(index + 2);
+        for (int i = 0; i < end.length(); i++) {
+            if (i != end.length() - 1 &&  !"00".equals(end.substring(i, i + 2))) {
+                return "not fill data!";
+            }
+        }
+        hexData = hexData.substring(0,index);
+
+        return new String(hexToByte(hexData));
+    }
 
     public static void main(String[] args) {
         System.out.println(new String(hexStringToBytes("617364E8808CE698AF617364616173E696B9E6B395E698AFE79A84E6B0B4E794B5E8B4B9E6B0B4E794B5E8B4B9")));
+
+
+        String fill = fillData("qweasd",16);
+        System.out.println(fill);
+        System.out.println(resolveFillData(fill,16));
     }
 }

@@ -16,6 +16,81 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Base64;
 
 public class SM2Utils {
+
+	public static byte[] encrypt132(byte[] publicKey, byte[] data) throws IOException {
+		if (publicKey == null || publicKey.length == 0) {
+			return null;
+		}
+
+		if (data == null || data.length == 0) {
+			return null;
+		}
+
+		byte[] source = new byte[data.length];
+		System.arraycopy(data, 0, source, 0, data.length);
+
+		Cipher cipher = new Cipher();
+		SM2 sm2 = SM2.Instance();
+		ECPoint userKey = sm2.ecc_curve.decodePoint(publicKey);
+
+		ECPoint c1 = cipher.Init_enc(sm2, userKey);
+		cipher.Encrypt(source);
+		byte[] c3 = new byte[32];
+		cipher.Dofinal(c3);
+
+//		ASN1Integer x = new ASN1Integer(c1.normalize().getAffineXCoord().toBigInteger());
+//		ASN1Integer y = new ASN1Integer(c1.normalize().getAffineYCoord().toBigInteger());
+//		DEROctetString derDig = new DEROctetString(c3);
+//		DEROctetString derEnc = new DEROctetString(source);
+//		ASN1EncodableVector v = new ASN1EncodableVector();
+//		v.add(x);
+//		v.add(y);
+//		v.add(derDig);
+//		v.add(derEnc);
+//		DERSequence seq = new DERSequence(v);
+//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//		DEROutputStream dos = new DEROutputStream(bos);
+//		dos.writeObject(seq);
+		return Util.hexToByte(Util.byteToHex(c1.getEncoded()).substring(2) + Util.byteToHex(c3) + Util.byteToHex(source));
+	}
+
+	public static byte[] decrypt132(byte[] privateKey, byte[] encryptedData) throws IOException {
+		if (privateKey == null || privateKey.length == 0) {
+			return null;
+		}
+
+		if (encryptedData == null || encryptedData.length == 0) {
+			return null;
+		}
+
+		String data = Util.byteToHex(encryptedData);
+
+		byte[] c1Bytes = Util.hexToByte(data.substring(0,130));
+		int c2Len = encryptedData.length - 97;
+		byte[] c3 = Util.hexToByte(data.substring(130,194));
+		byte[] c2 = Util.hexToByte(data.substring(194,194 + 2 * c2Len));
+
+
+		SM2 sm2 = SM2.Instance();
+		BigInteger userD = new BigInteger(1, privateKey);
+
+//		ByteArrayInputStream bis = new ByteArrayInputStream(enc);
+//		ASN1InputStream dis = new ASN1InputStream(bis);
+//		ASN1Primitive derObj = dis.readObject();
+//		ASN1Sequence asn1 = (ASN1Sequence) derObj;
+//		ASN1Integer x = (ASN1Integer) asn1.getObjectAt(0);
+//		ASN1Integer y = (ASN1Integer) asn1.getObjectAt(1);
+//
+
+		ECPoint c1 = sm2.ecc_curve.decodePoint(c1Bytes);
+
+		Cipher cipher = new Cipher();
+		cipher.Init_dec(userD, c1);
+		cipher.Decrypt(c2);
+		cipher.Dofinal(c3);
+		return c2;
+	}
+
 	public static byte[] encrypt(byte[] publicKey, byte[] data) throws IOException {
 		if (publicKey == null || publicKey.length == 0) {
 			return null;
@@ -37,20 +112,20 @@ public class SM2Utils {
 		byte[] c3 = new byte[32];
 		cipher.Dofinal(c3);
 
-		ASN1Integer x = new ASN1Integer(c1.normalize().getAffineXCoord().toBigInteger());
-		ASN1Integer y = new ASN1Integer(c1.normalize().getAffineYCoord().toBigInteger());
-		DEROctetString derDig = new DEROctetString(c3);
-		DEROctetString derEnc = new DEROctetString(source);
-		ASN1EncodableVector v = new ASN1EncodableVector();
-		v.add(x);
-		v.add(y);
-		v.add(derDig);
-		v.add(derEnc);
-		DERSequence seq = new DERSequence(v);
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DEROutputStream dos = new DEROutputStream(bos);
-		dos.writeObject(seq);
-		return bos.toByteArray();
+//		ASN1Integer x = new ASN1Integer(c1.normalize().getAffineXCoord().toBigInteger());
+//		ASN1Integer y = new ASN1Integer(c1.normalize().getAffineYCoord().toBigInteger());
+//		DEROctetString derDig = new DEROctetString(c3);
+//		DEROctetString derEnc = new DEROctetString(source);
+//		ASN1EncodableVector v = new ASN1EncodableVector();
+//		v.add(x);
+//		v.add(y);
+//		v.add(derDig);
+//		v.add(derEnc);
+//		DERSequence seq = new DERSequence(v);
+//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//		DEROutputStream dos = new DEROutputStream(bos);
+//		dos.writeObject(seq);
+		return Util.hexToByte(Util.byteToHex(c1.getEncoded()).substring(2) + Util.byteToHex(source) + Util.byteToHex(c3));
 	}
 
 	public static byte[] decrypt(byte[] privateKey, byte[] encryptedData) throws IOException {
@@ -62,28 +137,32 @@ public class SM2Utils {
 			return null;
 		}
 
-		byte[] enc = new byte[encryptedData.length];
-		System.arraycopy(encryptedData, 0, enc, 0, encryptedData.length);
+		String data = Util.byteToHex(encryptedData);
+
+		byte[] c1Bytes = Util.hexToByte(data.substring(0,130));
+		int c2Len = encryptedData.length - 97;
+		byte[] c2 = Util.hexToByte(data.substring(130,130 + 2*c2Len));
+		byte[] c3 = Util.hexToByte(data.substring(130 + 2 * c2Len,194 + 2 * c2Len));
+
 
 		SM2 sm2 = SM2.Instance();
 		BigInteger userD = new BigInteger(1, privateKey);
 
-		ByteArrayInputStream bis = new ByteArrayInputStream(enc);
-		ASN1InputStream dis = new ASN1InputStream(bis);
-		ASN1Primitive derObj = dis.readObject();
-		ASN1Sequence asn1 = (ASN1Sequence) derObj;
-		ASN1Integer x = (ASN1Integer) asn1.getObjectAt(0);
-		ASN1Integer y = (ASN1Integer) asn1.getObjectAt(1);
-		ECPoint c1 = sm2.ecc_curve.createPoint(x.getValue(), y.getValue());
+//		ByteArrayInputStream bis = new ByteArrayInputStream(enc);
+//		ASN1InputStream dis = new ASN1InputStream(bis);
+//		ASN1Primitive derObj = dis.readObject();
+//		ASN1Sequence asn1 = (ASN1Sequence) derObj;
+//		ASN1Integer x = (ASN1Integer) asn1.getObjectAt(0);
+//		ASN1Integer y = (ASN1Integer) asn1.getObjectAt(1);
+//
+
+		ECPoint c1 = sm2.ecc_curve.decodePoint(c1Bytes);
 
 		Cipher cipher = new Cipher();
 		cipher.Init_dec(userD, c1);
-		DEROctetString data = (DEROctetString) asn1.getObjectAt(3);
-		enc = data.getOctets();
-		cipher.Decrypt(enc);
-		byte[] c3 = new byte[32];
+		cipher.Decrypt(c2);
 		cipher.Dofinal(c3);
-		return enc;
+		return c2;
 	}
 
 	public static String sign(byte[] userId, byte[] privateKey, byte[] sourceData) throws IOException {

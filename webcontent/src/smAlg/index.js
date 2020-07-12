@@ -14,8 +14,8 @@ const C1C2C3 = 0
  */
 function doEncrypt(msg, publicKey, cipherMode = 1) {
   const cipher = new SM2Cipher()
-  msg = _.hexToArray(_.fillSm4Data(msg))
-
+  // msg = _.hexToArray(_.fillSm4Data(msg))
+  msg = _.stringToArr(msg)
   if (publicKey.length > 128) {
     publicKey = publicKey.substr(publicKey.length - 128)
   }
@@ -66,7 +66,8 @@ function doDecrypt(encryptData, privateKey, cipherMode = 1) {
   const isDecrypt = _.arrayToHex(c3_) === c3
 
   if (isDecrypt) {
-    const decryptData = _.analysisSm4Data(_.arrayToHex(data))
+    // const decryptData = _.analysisSm4Data(_.arrayToHex(data))
+    const decryptData = _.arrayToHex(data)
     return decryptData
   } else {
     return ''
